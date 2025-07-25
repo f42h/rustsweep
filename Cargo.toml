@@ -1,0 +1,10 @@
+[package]
+name = "icmpsweep_rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.41", features = ["derive"] }
+colored = "3.0.0"
+iptools = "0.3.0"
+popen_rs = "0.1.0"
