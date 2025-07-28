@@ -4,7 +4,9 @@ cargo build --release
 
 BIN="./target/release/rustsweep"
 
-IP_ADDRESS_PATTERN="192.168.99.x"
+# Enumerate private IPv4 and setup base pattern
+IP_ADDRESS=$(hostname -I | awk '{print $1}')
+IP_ADDRESS_PATTERN="${IP_ADDRESS%.*}.x"
 
 # Port scan enabled with `-e` flag
 START_PORT=1
