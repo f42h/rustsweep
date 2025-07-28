@@ -1,12 +1,11 @@
 mod core;
 
-use crate::core::session::PingSweepSession;
+use crate::core::{session::PingSweepSession, utils::is_root};
 use crate::core::utils::build_ip;
 
 use std::{process::exit, time::Instant};
 use clap::Parser;
 use colored::Colorize;
-
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -34,6 +33,12 @@ struct Args {
 
     #[arg(short, long, default_value_t = 10)]
     timeout: u64,
+
+    #[arg(short, long, action)]
+    inspect: bool,
+
+    #[arg(short, long, default_value="")]  
+    oui_db_path: String
 }
 
 fn worker() {
@@ -46,7 +51,9 @@ fn worker() {
         args.enable_port_scan,
         args.first_port,
         args.last_port,
-        args.timeout
+        args.timeout,
+        args.inspect,
+        &args.oui_db_path
     );
 
     let start_host = build_ip(&args.pattern, args.start_from);
@@ -63,6 +70,19 @@ fn worker() {
         println!("==================================");
     }
 
+    match is_root() {
+        Some(result) => {
+            if !result && args.inspect {
+                eprintln!("Root is required for `-i`!");
+                return;
+            }
+        },
+        None => {
+            eprintln!("Failed to get UID!");
+            return;
+        },
+    }
+    
     session.start_scan().map_err(|err| {
         eprintln!("{} Error: {}", "[✘]".red(), err);
         exit(1);

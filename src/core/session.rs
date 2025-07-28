@@ -1,7 +1,10 @@
 use std::{io, sync::mpsc, thread};
 use colored::Colorize;
 
-use crate::core::{connect::{call_ping, scan_ports}, utils::build_ip};
+use crate::core::{
+    connect::{call_ping, oui_lookup, request_mac, scan_ports}, 
+    utils::build_ip
+};
 
 pub struct PingSweepSession {
     pattern: String,
@@ -11,7 +14,9 @@ pub struct PingSweepSession {
     enable_port_scan: bool,
     start_port: u16,
     end_port: u16,
-    timeout: u64
+    timeout: u64,
+    inspect: bool,
+    oui_db_path: String
 }
 
 impl PingSweepSession {
@@ -23,7 +28,9 @@ impl PingSweepSession {
         enable_port_scan: bool, 
         start_port: u16, 
         end_port: u16,
-        timeout: u64
+        timeout: u64,
+        inspect: bool,
+        oui_db_path: &str
     ) -> Self {
         Self { 
             pattern: String::from(pattern), // Address pattern (e.g. 192.168.172.x)
@@ -33,7 +40,9 @@ impl PingSweepSession {
             enable_port_scan, // Enable port scanning for each reachable host
             start_port,
             end_port,
-            timeout // Port connect timeout in seconds
+            timeout, // Port connect timeout in seconds
+            inspect, // Send ARP to obtain MAC + Vendor
+            oui_db_path: String::from(oui_db_path) // OUI lookup data file
         }
     }
 
@@ -87,8 +96,9 @@ impl PingSweepSession {
             let host_ip = result;
 
             if self.enable_port_scan {
-                println!("==================================");
+                println!("\r==================================");
             }
+
             println!("{} {}{}", "[✔]".green(), host_ip, " ".repeat(10));
 
             if self.enable_port_scan {
@@ -97,18 +107,30 @@ impl PingSweepSession {
                 match scan_ports(&host_ip, self.start_port, self.end_port, self.timeout) {
                     Ok(ports) => {
                         for port in ports {
-                            println!("[TCP] {}: {}{}", "Open".green(), port, " ".repeat(10));
+                            println!("\r[TCP] {}: {}{}", "Open".green(), port, " ".repeat(30));
 
                             port_count += 1;
                         }
                     },
                     Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err))
                 };
-                
+            }
+
+            if self.inspect {
+                println!("\rStart OUI lookup..{}", " ".repeat(30));
+
+                if let Some(mut mac) = request_mac(&host_ip) {
+                    mac = mac.replace("\n", "");
+
+                    match oui_lookup(&mac, &self.oui_db_path) {
+                        Some(org) => println!("[MAC] {}\n[ORG] {}", mac, org),
+                        None => println!("UNKNOWN"),
+                    }
+                } 
             }
         }
 
-        println!("\nEnumeration complete!");
+        println!("Enumeration complete!{}", " ".repeat(30));
         println!(
             "{} hosts and {} open ports were identified.", 
             host_count, port_count
