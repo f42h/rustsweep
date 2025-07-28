@@ -39,7 +39,7 @@ sudo ./target/release/rustsweep -p 192.168.178.x -e -f 1 -l 500 -i
 ```
 
 ### Output
-![]()
+![](https://github.com/f42h/rustsweep/blob/master/assets/test_run.gif)
 
 ### License
 This project is published under the [MIT](https://github.com/f42h/rustsweep/blob/master/LICENSE) License. See the LICENSE file for more details.
