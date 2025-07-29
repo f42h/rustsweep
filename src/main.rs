@@ -38,7 +38,10 @@ struct Args {
     inspect: bool,
 
     #[arg(short, long, default_value="")]  
-    oui_db_path: String
+    oui_db_path: String,
+
+    #[arg(long, action)]
+    http_test: bool
 }
 
 fn worker() {
@@ -53,7 +56,8 @@ fn worker() {
         args.last_port,
         args.timeout,
         args.inspect,
-        &args.oui_db_path
+        &args.oui_db_path,
+        args.http_test
     );
 
     let start_host = build_ip(&args.pattern, args.start_from);
@@ -81,6 +85,10 @@ fn worker() {
             eprintln!("Failed to get UID!");
             return;
         },
+    }
+
+    if args.http_test && !args.enable_port_scan {
+        println!("Flag `--http-test` set, but port scanning is disabled. Testing will be skipped!")
     }
     
     session.start_scan().map_err(|err| {

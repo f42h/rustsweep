@@ -2,7 +2,9 @@ use std::{io::{self, Write}, sync::mpsc, thread};
 use colored::Colorize;
 
 use crate::core::{
-    connect::{call_ping, oui_lookup, request_mac, scan_ports}, 
+    connect::{call_ping, scan_ports}, 
+    http::{http_request, UrlBuild}, 
+    oui::{oui_lookup, request_mac}, 
     utils::build_ip
 };
 
@@ -16,7 +18,8 @@ pub struct PingSweepSession {
     end_port: u16,
     timeout: u64,
     inspect: bool,
-    oui_db_path: String
+    oui_db_path: String,
+    http_test: bool
 }
 
 impl PingSweepSession {
@@ -30,7 +33,8 @@ impl PingSweepSession {
         end_port: u16,
         timeout: u64,
         inspect: bool,
-        oui_db_path: &str
+        oui_db_path: &str,
+        http_test: bool
     ) -> Self {
         Self { 
             pattern: String::from(pattern), // Address pattern (e.g. 192.168.172.x)
@@ -42,7 +46,8 @@ impl PingSweepSession {
             end_port,
             timeout, // Port connect timeout in seconds
             inspect, // Send ARP to obtain MAC + Vendor
-            oui_db_path: String::from(oui_db_path) // OUI lookup data file
+            oui_db_path: String::from(oui_db_path), // OUI lookup data file
+            http_test
         }
     }
 
@@ -86,6 +91,8 @@ impl PingSweepSession {
         let mut host_count = 0;
         let mut port_count = 0;
 
+        let webserver_ports: Vec<u16> = vec![80, 443];
+
         for result in receiver {
             if result.contains("failed") {
                 return Err(io::Error::new(io::ErrorKind::InvalidInput, result));
@@ -108,6 +115,17 @@ impl PingSweepSession {
                     Ok(ports) => {
                         for port in ports {
                             println!("\r[TCP] {}: {}{}", "Open".green(), port, " ".repeat(30));
+
+                            if self.http_test && webserver_ports.contains(&port) {
+                                let url_build = UrlBuild::new("http", &host_ip, port);
+                                let url = url_build.construct();
+                                
+                                if let Ok(status_code) = http_request(&url) {
+                                    if status_code.is_success() {
+                                        println!("  HTTP {} -> `{}`", status_code, url);
+                                    }
+                                }
+                            }
 
                             port_count += 1;
                         }
@@ -136,10 +154,15 @@ impl PingSweepSession {
         }
 
         println!("Enumeration complete!{}", " ".repeat(30));
-        println!(
-            "{} hosts and {} open ports were identified.", 
-            host_count, port_count
-        );
+
+        if self.enable_port_scan {
+            println!(
+                "{} hosts and {} open ports were identified.", 
+                host_count, port_count
+            );
+        } else {
+            println!("{} hosts were identified.", host_count);
+        }
 
         Ok(())
     }
