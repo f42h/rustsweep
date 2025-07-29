@@ -11,13 +11,6 @@ ieee_sources = [
     "https://standards-oui.ieee.org/iab/iab.csv"
 ]
 
-def get_csv_basename(url)
-    parsed_url = URI.parse(url)
-    path = parsed_url.path
-
-    File.basename(path)
-end
-
 # Output location
 output_directory = "ieee_dbs_csv/"
 
@@ -32,7 +25,9 @@ end
 
 # Download CSVs
 ieee_sources.each do |url|
-    csv_basename = get_csv_basename(url)
+    parsed_url = URI.parse(url)
+    path = parsed_url.path
+    csv_basename = File.basename(path)
 
     puts "Starting download: #{url} -> #{csv_basename}"
 
@@ -52,29 +47,23 @@ if File.exists?(output_txt)
     File.delete(output_txt)
 end
 
-def output_txt_append(file, content)
-    File.open(file, "a+") do |file|
-        file.print content
-    end
-end
+File.open(output_txt, "a+") do |output|
+    Dir.each_child(output_directory) do |file|
+        csv_path = File.join(output_directory, file)
 
-Dir.each_child(output_directory) do |file|
-    csv_path = File.join(output_directory, file)
+        line_counter = 0
 
-    line_counter = 0
+        File.each_line(csv_path) do |line|
+            # Skip first line
+            line_counter += 1
+            next if line_counter == 1
 
-    File.each_line(csv_path) do |line|
-        # Skip first line
-        line_counter += 1
-        next if line_counter == 1
+            tok = line.split(",")
+            assignment = tok[1]  
+            organisation = tok[2] 
 
-        tok = line.split(",")
-        assignment = tok[1]  
-        organisation = tok[2] 
-
-        content = "#{assignment},#{organisation}\n"
-        
-        output_txt_append(output_txt, content)
+            output.print "#{assignment},#{organisation}\n"
+        end
     end
 end
 
