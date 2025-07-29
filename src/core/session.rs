@@ -1,4 +1,4 @@
-use std::{io, sync::mpsc, thread};
+use std::{io::{self, Write}, sync::mpsc, thread};
 use colored::Colorize;
 
 use crate::core::{
@@ -128,6 +128,11 @@ impl PingSweepSession {
                     }
                 } 
             }
+        }
+
+        if !self.inspect {
+            print!("\r");
+            io::stdout().flush().unwrap();
         }
 
         println!("Enumeration complete!{}", " ".repeat(30));
