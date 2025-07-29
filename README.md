@@ -21,16 +21,17 @@ bash build.sh
 ```
 
 ### Options
-| Flag     | Description                                      |
-|----------|--------------------------------------------------|
-| -p       | IP pattern (e.g. 192.168.178.x)                  |
-| -e       | Enable TCP port scanning                         |
-| -f       | Specify the port where the TCP scan starts       |
-| -l       | Specify the port where the TCP scan ends         |
-| -i       | Enable OUI lookup feature                        |
-| -o       | Custom path of oui db file                       |
-| -d       | ICMP request deadline                            |
-| -t       | TCP handshake timeout                            |
+| Flag          | Description                                      |
+|---------------|--------------------------------------------------|
+| -p            | IP pattern (e.g. 192.168.178.x)                  |
+| -e            | Enable TCP port scanning                         |
+| -f            | Specify the port where the TCP scan starts       |
+| -l            | Specify the port where the TCP scan ends         |
+| -i            | Enable OUI lookup feature                        |
+| -o            | Custom path of oui db file                       |
+| -d            | ICMP request deadline                            |
+| -t            | TCP handshake timeout                            |
+| --http-test   | Web UI/Server test                               |
 
 ### Example
 - Enable port scanning and OUI lookup (adjust private ip pattern for your network)
